@@ -23,5 +23,10 @@ public enum AssetSourceKind {
     /**
      * Asset loaded from an external JAR asset pack.
      */
-    EXTERNAL_JAR
+    EXTERNAL_JAR,
+
+    /**
+     * Asset loaded from an external directory
+     */
+    EXTERNAL_DIRECTORY
 }

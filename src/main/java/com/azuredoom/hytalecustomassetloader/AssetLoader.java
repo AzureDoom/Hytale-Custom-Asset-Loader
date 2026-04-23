@@ -316,19 +316,57 @@ public final class AssetLoader<T> {
         }
 
         try (var stream = Files.list(assetPackDir)) {
-            stream.filter(Files::isRegularFile)
-                    .filter(path -> {
-                        String name = path.getFileName().toString().toLowerCase();
-                        return name.endsWith(".zip") || name.endsWith(".jar");
-                    })
-                    .sorted()
-                    .forEach(path -> {
-                        try {
-                            loadFromExternalArchive(sink, path);
-                        } catch (Exception e) {
-                            throw new RuntimeException("Failed to load asset pack " + path, e);
+            stream.sorted()
+                .forEach(path -> {
+                    try {
+                        if (Files.isDirectory(path)) {
+                            loadFromExternalDirectory(sink, path);
+                            return;
                         }
-                    });
+
+                        if (Files.isRegularFile(path)) {
+                            String name = path.getFileName().toString().toLowerCase();
+                            if (name.endsWith(".zip") || name.endsWith(".jar")) {
+                                loadFromExternalArchive(sink, path);
+                            }
+                        }
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to load asset pack " + path, e);
+                    }
+                });
+        }
+    }
+
+    private void loadFromExternalDirectory(List<Candidate<T>> sink, Path packRoot) throws Exception {
+        Path assetRoot = packRoot.resolve(options.resourceFolder());
+        if (!Files.exists(assetRoot) || !Files.isDirectory(assetRoot)) {
+            return;
+        }
+
+        try (var stream = Files.walk(assetRoot)) {
+            stream.filter(Files::isRegularFile)
+                .filter(path -> path.toString().endsWith(options.fileExtension()))
+                .sorted()
+                .forEach(path -> {
+                    String relative = assetRoot.relativize(path).toString().replace('\\', '/');
+                    String sourceName = packRoot.getFileName() + "!/" + options.resourceFolder() + "/" + relative;
+
+                    try (InputStream input = Files.newInputStream(path)) {
+                        T asset = parser.parse(input, sourceName, AssetSourceKind.EXTERNAL_DIRECTORY);
+
+                        sink.add(
+                            new Candidate<>(
+                                asset,
+                                new AssetSource(AssetSourceKind.EXTERNAL_DIRECTORY, sourceName),
+                                fingerprintForFile(path, relative),
+                                200,
+                                options.allowExternalOverrides()
+                            )
+                        );
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to load external directory resource " + sourceName, e);
+                    }
+                });
         }
     }
 
