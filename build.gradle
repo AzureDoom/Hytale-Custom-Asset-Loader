@@ -65,7 +65,7 @@ publishing {
 
     publications {
         maven(MavenPublication) {
-            artifactId = "hytale-asset-editor-runtime"
+            artifactId = "hytale-custom-asset-loader"
             from components.java
         }
     }
