@@ -1,5 +1,8 @@
 package com.azuredoom.hytalecustomassetloader;
 
+import com.azuredoom.hytalecustomassetloader.model.AssetReloadResult;
+import com.azuredoom.hytalecustomassetloader.spi.ReloadableAssetRegistrar;
+
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -14,37 +17,67 @@ import java.util.function.Consumer;
  * @param <T> the asset definition type being loaded and registered
  */
 public final class AssetBootstrapper<T> {
-
     private final AssetLoader<T> loader;
-
     private final Consumer<T> registrar;
+    private final ReloadableAssetRegistrar<T> reloadableRegistrar;
 
     /**
-     * Creates a new bootstrapper using the provided loader and registrar.
+     * Creates a bootstrapper that performs one-time registration for loaded assets.
      *
-     * @param loader    the loader responsible for discovering and parsing assets
-     * @param registrar a callback that registers each loaded asset with the caller's registry or service layer
-     * @throws NullPointerException if either argument is {@code null}
+     * @param loader    the asset loader used to discover and load assets
+     * @param registrar the consumer that receives each loaded asset
      */
     public AssetBootstrapper(AssetLoader<T> loader, Consumer<T> registrar) {
         this.loader = Objects.requireNonNull(loader, "loader");
         this.registrar = Objects.requireNonNull(registrar, "registrar");
+        this.reloadableRegistrar = null;
     }
 
     /**
-     * Executes the full bootstrap sequence.
-     * <p>
-     * This method loads all assets from the configured discovery sources, then passes each merged asset to the
-     * registrar in iteration order. The returned map is the same merged result produced by the loader.
+     * Creates a bootstrapper that supports incremental reload behavior.
      *
-     * @return an immutable map of merged assets keyed by their extracted IDs
-     * @throws RuntimeException if asset discovery, parsing, or registration fails
+     * @param loader              the asset loader used to discover, load, and reload assets
+     * @param reloadableRegistrar the registrar that applies initial and incremental asset changes
+     */
+    public AssetBootstrapper(AssetLoader<T> loader, ReloadableAssetRegistrar<T> reloadableRegistrar) {
+        this.loader = Objects.requireNonNull(loader, "loader");
+        this.reloadableRegistrar = Objects.requireNonNull(reloadableRegistrar, "reloadableRegistrar");
+        this.registrar = null;
+    }
+
+    /**
+     * Loads all assets and applies the initial registration flow.
+     *
+     * <p>If a {@link ReloadableAssetRegistrar} was provided, the initial snapshot is applied through it.
+     * Otherwise, each merged asset is passed to the one-time registrar.</p>
+     *
+     * @return the merged assets keyed by asset ID
      */
     public Map<String, T> bootstrap() {
         var result = loader.loadAll();
-        for (var asset : result.mergedAssets().values()) {
-            registrar.accept(asset);
+        if (reloadableRegistrar != null) {
+            reloadableRegistrar.applyInitial(result.snapshot());
+        } else {
+            for (var asset : result.mergedAssets().values()) {
+                registrar.accept(asset);
+            }
         }
         return result.mergedAssets();
+    }
+
+    /**
+     * Reloads assets and applies the resulting incremental changes.
+     *
+     * @return the result of the reload operation
+     * @throws IllegalStateException if this bootstrapper was not created with a
+     *                               {@link ReloadableAssetRegistrar}
+     */
+    public AssetReloadResult<T> reload() {
+        if (reloadableRegistrar == null) {
+            throw new IllegalStateException("reload() requires a ReloadableAssetRegistrar");
+        }
+        var result = loader.reload();
+        reloadableRegistrar.applyReload(result);
+        return result;
     }
 }

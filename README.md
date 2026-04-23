@@ -18,6 +18,7 @@ It is designed to remove repeated bootstrap logic across systems like tags, clas
 - Allows optional external override behavior
 - Uses pluggable parsers, ID extractors, and logging adapters
 - Keeps asset-specific validation and registration logic outside the loader
+- Supports **live reloading** with diff-based updates (add/update/remove)
 
 ---
 
@@ -55,6 +56,8 @@ The main reusable loader.
 4. parsing matching files into typed asset definitions
 5. merging them by ID
 
+In addition to one-shot loading, `AssetLoader` can operate in a **stateful mode** that supports live reloading via snapshot diffing.
+
 ### AssetBootstrapper
 
 A convenience wrapper around `AssetLoader`.
@@ -64,6 +67,10 @@ Use it when you want to:
 - load all assets
 - register them immediately
 - get the merged result map back
+
+⚠️ This is intended for **startup loading only**.
+
+For live reload support, use a `ReloadableAssetRegistrar` instead.
 
 ### AssetDiscoveryOptions
 
@@ -193,6 +200,105 @@ for (var definition : result.mergedAssets().values()) {
     registry.register(definition);
 }
 ```
+
+---
+
+## Live Reload
+
+The loader can operate in **live reload mode**, allowing assets to be updated at runtime without restarting your application.
+
+### What Live Reload Does
+
+On reload, the loader:
+
+1. rescans all sources (classpath + external packs)
+2. rebuilds a full merged snapshot
+3. computes a **diff** against the previous state
+4. applies:
+    - added assets
+    - updated assets
+    - removed assets
+
+This ensures:
+- deleted files are properly removed
+- overridden assets fall back correctly
+- registries stay consistent
+
+---
+
+### Using Live Reload
+
+Instead of a one-shot bootstrap, use a reloadable registrar:
+
+```java
+var loader = new AssetLoader<>(...);
+
+var registrar = new ReloadableAssetRegistrar<MyAsset>() {
+    @Override
+    public void add(String id, MyAsset asset) {
+        registry.register(asset);
+    }
+
+    @Override
+    public void update(String id, MyAsset oldAsset, MyAsset newAsset) {
+        registry.unregister(oldAsset);
+        registry.register(newAsset);
+    }
+
+    @Override
+    public void remove(String id, MyAsset asset) {
+        registry.unregister(asset);
+    }
+};
+```
+
+Initial load:
+```java
+var snapshot = loader.loadInitial();
+registrar.applyInitial(snapshot);
+```
+
+Reload:
+```java
+var result = loader.reload();
+registrar.applyDiff(result.diff());
+```
+
+Watching for File Changes
+
+You can optionally enable automatic reloads using a watcher:
+```java
+var reloader = new AssetReloader(loader, registrar);
+reloader.startWatching();
+```
+
+This monitors:
+
+- external pack directory (mods/)
+- exploded classpath directories (development mode)
+
+Configuration
+
+Live reload behavior is controlled via AssetDiscoveryOptions:
+```java
+new AssetDiscoveryOptions(
+    "classes",
+    ".json",
+    Paths.get("mods"),
+    true,
+    true,
+    true,              // enableLiveReload
+    true,              // watchExternalPacks
+    true,              // watchExplodedClasspath
+    Duration.ofMillis(500) // debounce
+);
+```
+
+Limitations
+
+- Packaged classpath JAR resources cannot be hot-reloaded without a new classloader
+- External .zip / .jar packs are reloaded as whole units
+- Reload is eventually consistent (debounced for stability)
 
 ---
 
