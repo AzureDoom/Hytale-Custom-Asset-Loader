@@ -117,7 +117,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.azuredoom.hytalecustomassetloader:hytale-custom-asset-loader:1.1.0'
+    implementation 'com.azuredoom.hytalecustomassetloader:hytale-custom-asset-loader:1.1.2'
 }
 ```
 
@@ -141,8 +141,8 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.azuredoom.hytalecustomassetloader:hytale-custom-asset-loader:1.1.0'
-    shade 'com.azuredoom.hytalecustomassetloader:hytale-custom-asset-loader:1.1.0'
+    implementation 'com.azuredoom.hytalecustomassetloader:hytale-custom-asset-loader:1.1.2'
+    shade 'com.azuredoom.hytalecustomassetloader:hytale-custom-asset-loader:1.1.2'
 }
 
 tasks.jar {
