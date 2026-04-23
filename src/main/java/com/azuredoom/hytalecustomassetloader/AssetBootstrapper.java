@@ -1,11 +1,11 @@
 package com.azuredoom.hytalecustomassetloader;
 
-import com.azuredoom.hytalecustomassetloader.model.AssetReloadResult;
-import com.azuredoom.hytalecustomassetloader.spi.ReloadableAssetRegistrar;
-
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
+
+import com.azuredoom.hytalecustomassetloader.model.AssetReloadResult;
+import com.azuredoom.hytalecustomassetloader.spi.ReloadableAssetRegistrar;
 
 /**
  * Coordinates the full asset bootstrap flow for a specific asset type.
@@ -17,8 +17,11 @@ import java.util.function.Consumer;
  * @param <T> the asset definition type being loaded and registered
  */
 public final class AssetBootstrapper<T> {
+
     private final AssetLoader<T> loader;
+
     private final Consumer<T> registrar;
+
     private final ReloadableAssetRegistrar<T> reloadableRegistrar;
 
     /**
@@ -47,9 +50,10 @@ public final class AssetBootstrapper<T> {
 
     /**
      * Loads all assets and applies the initial registration flow.
-     *
-     * <p>If a {@link ReloadableAssetRegistrar} was provided, the initial snapshot is applied through it.
-     * Otherwise, each merged asset is passed to the one-time registrar.</p>
+     * <p>
+     * If a {@link ReloadableAssetRegistrar} was provided, the initial snapshot is applied through it. Otherwise, each
+     * merged asset is passed to the one-time registrar.
+     * </p>
      *
      * @return the merged assets keyed by asset ID
      */
@@ -69,8 +73,7 @@ public final class AssetBootstrapper<T> {
      * Reloads assets and applies the resulting incremental changes.
      *
      * @return the result of the reload operation
-     * @throws IllegalStateException if this bootstrapper was not created with a
-     *                               {@link ReloadableAssetRegistrar}
+     * @throws IllegalStateException if this bootstrapper was not created with a {@link ReloadableAssetRegistrar}
      */
     public AssetReloadResult<T> reload() {
         if (reloadableRegistrar == null) {

@@ -5,9 +5,10 @@ import com.azuredoom.hytalecustomassetloader.model.AssetSnapshot;
 
 /**
  * Contract for consumers that apply asset changes incrementally.
- *
- * <p>Implementations receive add, update, and remove callbacks as assets change,
- * allowing efficient synchronization without full reloads.</p>
+ * <p>
+ * Implementations receive add, update, and remove callbacks as assets change, allowing efficient synchronization
+ * without full reloads.
+ * </p>
  */
 public interface ReloadableAssetRegistrar<T> {
 
@@ -49,8 +50,9 @@ public interface ReloadableAssetRegistrar<T> {
 
     /**
      * Applies an incremental reload result.
-     *
-     * <p>Removals are processed first, followed by updates, then additions.</p>
+     * <p>
+     * Removals are processed first, followed by updates, then additions.
+     * </p>
      *
      * @param result the reload result to apply
      */

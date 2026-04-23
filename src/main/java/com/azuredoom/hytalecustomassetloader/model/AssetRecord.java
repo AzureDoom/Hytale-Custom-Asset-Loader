@@ -13,12 +13,13 @@ import java.util.Objects;
  * @param overrideEligible whether this asset can be overridden by higher-priority sources
  */
 public record AssetRecord<T>(
-        String id,
-        T asset,
-        AssetSource source,
-        String fingerprint,
-        int priority,
-        boolean overrideEligible) {
+    String id,
+    T asset,
+    AssetSource source,
+    String fingerprint,
+    int priority,
+    boolean overrideEligible
+) {
 
     public AssetRecord {
         Objects.requireNonNull(id, "id");

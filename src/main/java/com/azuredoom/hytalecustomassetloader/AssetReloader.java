@@ -1,9 +1,5 @@
 package com.azuredoom.hytalecustomassetloader;
 
-import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
-import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
-import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.FileSystems;
@@ -19,19 +15,29 @@ import com.azuredoom.hytalecustomassetloader.model.AssetReloadResult;
 import com.azuredoom.hytalecustomassetloader.spi.AssetLogger;
 import com.azuredoom.hytalecustomassetloader.spi.ReloadableAssetRegistrar;
 
+import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
+import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
+import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
+
 /**
  * Watches file-backed asset roots and re-applies diffs when assets change.
- *
- * <p>This intentionally watches only real filesystem directories. Packaged classpath JAR resources are still scanned on
- * manual reload, but they are not watchable without swapping classloaders.</p>
+ * <p>
+ * This intentionally watches only real filesystem directories. Packaged classpath JAR resources are still scanned on
+ * manual reload, but they are not watchable without swapping classloaders.
+ * </p>
  */
 public final class AssetReloader<T> implements Closeable {
+
     private final AssetLoader<T> loader;
+
     private final ReloadableAssetRegistrar<T> registrar;
+
     private final AssetLogger logger;
+
     private final AtomicBoolean running = new AtomicBoolean(false);
 
     private WatchService watchService;
+
     private Thread watcherThread;
 
     /**
@@ -49,10 +55,11 @@ public final class AssetReloader<T> implements Closeable {
 
     /**
      * Starts watching asset roots for changes and applies live reloads.
+     * <p>
+     * If no assets have been loaded yet, this will perform an initial load.
+     * </p>
      *
-     * <p>If no assets have been loaded yet, this will perform an initial load.</p>
-     *
-     * @throws IOException if the watch service cannot be initialized
+     * @throws IOException           if the watch service cannot be initialized
      * @throws IllegalStateException if live reload is not enabled
      */
     public void start() throws IOException {
@@ -87,8 +94,9 @@ public final class AssetReloader<T> implements Closeable {
 
     /**
      * Internal loop that listens for filesystem events and triggers reloads.
-     *
-     * <p>Applies a debounce delay before reloading to avoid excessive reloads.</p>
+     * <p>
+     * Applies a debounce delay before reloading to avoid excessive reloads.
+     * </p>
      */
     private void runWatcherLoop() {
         long debounceMillis = loader.options().reloadDebounce().toMillis();

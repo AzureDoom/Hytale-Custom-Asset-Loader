@@ -28,15 +28,21 @@ import com.azuredoom.hytalecustomassetloader.spi.AssetParser;
 
 /**
  * Generic loader for Hytale-style custom assets stored as files on the classpath or inside external asset packs.
- *
- * <p>For live-reload use cases this loader preserves the last merged snapshot and can produce a diff against a newly
- * rebuilt snapshot.</p>
+ * <p>
+ * For live-reload use cases this loader preserves the last merged snapshot and can produce a diff against a newly
+ * rebuilt snapshot.
+ * </p>
  */
 public final class AssetLoader<T> {
+
     private final ClassLoader classLoader;
+
     private final AssetDiscoveryOptions options;
+
     private final AssetParser<T> parser;
+
     private final AssetIdExtractor<T> idExtractor;
+
     private final AssetLogger logger;
 
     private volatile AssetSnapshot<T> currentSnapshot = AssetSnapshot.empty();
@@ -51,11 +57,12 @@ public final class AssetLoader<T> {
      * @param logger      the logger used for load diagnostics
      */
     public AssetLoader(
-            ClassLoader classLoader,
-            AssetDiscoveryOptions options,
-            AssetParser<T> parser,
-            AssetIdExtractor<T> idExtractor,
-            AssetLogger logger) {
+        ClassLoader classLoader,
+        AssetDiscoveryOptions options,
+        AssetParser<T> parser,
+        AssetIdExtractor<T> idExtractor,
+        AssetLogger logger
+    ) {
         this.classLoader = Objects.requireNonNull(classLoader, "classLoader");
         this.options = Objects.requireNonNull(options, "options");
         this.parser = Objects.requireNonNull(parser, "parser");
@@ -73,10 +80,15 @@ public final class AssetLoader<T> {
         try {
             AssetSnapshot<T> snapshot = scanSnapshot();
             currentSnapshot = snapshot;
-            logger.info("Loaded " + snapshot.mergedAssets().size() + " assets from folder '" + options.resourceFolder() + "'.");
+            logger.info(
+                "Loaded " + snapshot.mergedAssets().size() + " assets from folder '" + options.resourceFolder() + "'."
+            );
             return new AssetLoadResult<>(snapshot);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to load assets from resource folder '" + options.resourceFolder() + "'", e);
+            throw new RuntimeException(
+                "Failed to load assets from resource folder '" + options.resourceFolder() + "'",
+                e
+            );
         }
     }
 
@@ -94,7 +106,10 @@ public final class AssetLoader<T> {
             currentSnapshot = next;
             return new AssetReloadResult<>(previous, next, diff);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to reload assets from resource folder '" + options.resourceFolder() + "'", e);
+            throw new RuntimeException(
+                "Failed to reload assets from resource folder '" + options.resourceFolder() + "'",
+                e
+            );
         }
     }
 
@@ -118,9 +133,10 @@ public final class AssetLoader<T> {
 
     /**
      * Discovers filesystem roots that can be watched for live reload.
-     *
-     * <p>This may include the external asset pack directory and exploded classpath directories,
-     * depending on the configured options.</p>
+     * <p>
+     * This may include the external asset pack directory and exploded classpath directories, depending on the
+     * configured options.
+     * </p>
      *
      * @return the discovered watch roots
      * @throws RuntimeException if classpath watch roots cannot be resolved
@@ -164,9 +180,10 @@ public final class AssetLoader<T> {
 
     /**
      * Builds a merged snapshot from the provided candidates.
-     *
-     * <p>Assets are merged by ID in iteration order. Duplicate classpath assets are skipped,
-     * while override-eligible candidates may replace existing entries.</p>
+     * <p>
+     * Assets are merged by ID in iteration order. Duplicate classpath assets are skipped, while override-eligible
+     * candidates may replace existing entries.
+     * </p>
      *
      * @param candidates the discovered asset candidates
      * @return the merged snapshot
@@ -178,12 +195,13 @@ public final class AssetLoader<T> {
         for (Candidate<T> candidate : candidates) {
             String id = requireId(candidate.asset(), candidate.source().name());
             AssetRecord<T> nextRecord = new AssetRecord<>(
-                    id,
-                    candidate.asset(),
-                    candidate.source(),
-                    candidate.fingerprint(),
-                    candidate.priority(),
-                    candidate.overrideEligible());
+                id,
+                candidate.asset(),
+                candidate.source(),
+                candidate.fingerprint(),
+                candidate.priority(),
+                candidate.overrideEligible()
+            );
 
             AssetRecord<T> existingRecord = recordsById.get(id);
             if (existingRecord == null) {
@@ -199,8 +217,9 @@ public final class AssetLoader<T> {
                 logger.info("Overrode asset '" + id + "' from " + candidate.source().name());
             } else {
                 logger.warn(
-                        "Skipping duplicate built-in/classpath asset '" + id + "' from " + candidate.source().name()
-                                + " because one was already loaded");
+                    "Skipping duplicate built-in/classpath asset '" + id + "' from " + candidate.source().name()
+                        + " because one was already loaded"
+                );
             }
         }
 
@@ -234,9 +253,9 @@ public final class AssetLoader<T> {
         Path root = Paths.get(resourceUrl.toURI());
         try (var stream = Files.walk(root)) {
             stream.filter(Files::isRegularFile)
-                    .filter(path -> path.toString().endsWith(options.fileExtension()))
-                    .sorted()
-                    .forEach(path -> loadDirectoryAsset(sink, root, path));
+                .filter(path -> path.toString().endsWith(options.fileExtension()))
+                .sorted()
+                .forEach(path -> loadDirectoryAsset(sink, root, path));
         }
     }
 
@@ -245,12 +264,15 @@ public final class AssetLoader<T> {
         String sourceName = options.resourceFolder() + "/" + relative;
         try (InputStream input = Files.newInputStream(path)) {
             T asset = parser.parse(input, sourceName, AssetSourceKind.CLASSPATH_DIRECTORY);
-            sink.add(new Candidate<>(
+            sink.add(
+                new Candidate<>(
                     asset,
                     new AssetSource(AssetSourceKind.CLASSPATH_DIRECTORY, sourceName),
                     fingerprintForFile(path, relative),
                     100,
-                    false));
+                    false
+                )
+            );
         } catch (Exception e) {
             throw new RuntimeException("Failed to load resource " + sourceName, e);
         }
@@ -261,11 +283,11 @@ public final class AssetLoader<T> {
         try (var jarFile = connection.getJarFile()) {
             List<? extends ZipEntry> entries = Collections.list(jarFile.entries());
             entries.stream()
-                    .filter(entry -> !entry.isDirectory())
-                    .filter(entry -> entry.getName().startsWith(options.resourceFolder() + "/"))
-                    .filter(entry -> entry.getName().endsWith(options.fileExtension()))
-                    .sorted(Comparator.comparing(ZipEntry::getName))
-                    .forEach(entry -> loadClasspathJarAsset(sink, jarFile, entry));
+                .filter(entry -> !entry.isDirectory())
+                .filter(entry -> entry.getName().startsWith(options.resourceFolder() + "/"))
+                .filter(entry -> entry.getName().endsWith(options.fileExtension()))
+                .sorted(Comparator.comparing(ZipEntry::getName))
+                .forEach(entry -> loadClasspathJarAsset(sink, jarFile, entry));
         }
     }
 
@@ -273,12 +295,15 @@ public final class AssetLoader<T> {
         String name = entry.getName();
         try (InputStream input = jarFile.getInputStream(entry)) {
             T asset = parser.parse(input, name, AssetSourceKind.CLASSPATH_JAR);
-            sink.add(new Candidate<>(
+            sink.add(
+                new Candidate<>(
                     asset,
                     new AssetSource(AssetSourceKind.CLASSPATH_JAR, name),
                     fingerprintForZipEntry(jarFile.getName(), entry),
                     100,
-                    false));
+                    false
+                )
+            );
         } catch (Exception e) {
             throw new RuntimeException("Failed to load classpath jar resource " + name, e);
         }
@@ -311,27 +336,30 @@ public final class AssetLoader<T> {
         try (ZipFile zipFile = new ZipFile(archivePath.toFile())) {
             List<? extends ZipEntry> entries = Collections.list(zipFile.entries());
             entries.stream()
-                    .filter(entry -> !entry.isDirectory())
-                    .filter(entry -> entry.getName().startsWith(options.resourceFolder() + "/"))
-                    .filter(entry -> entry.getName().endsWith(options.fileExtension()))
-                    .sorted(Comparator.comparing(ZipEntry::getName))
-                    .forEach(entry -> loadExternalArchiveAsset(sink, archivePath, zipFile, entry));
+                .filter(entry -> !entry.isDirectory())
+                .filter(entry -> entry.getName().startsWith(options.resourceFolder() + "/"))
+                .filter(entry -> entry.getName().endsWith(options.fileExtension()))
+                .sorted(Comparator.comparing(ZipEntry::getName))
+                .forEach(entry -> loadExternalArchiveAsset(sink, archivePath, zipFile, entry));
         }
     }
 
     private void loadExternalArchiveAsset(List<Candidate<T>> sink, Path archivePath, ZipFile zipFile, ZipEntry entry) {
         AssetSourceKind kind = archivePath.toString().toLowerCase().endsWith(".jar")
-                ? AssetSourceKind.EXTERNAL_JAR
-                : AssetSourceKind.EXTERNAL_ZIP;
+            ? AssetSourceKind.EXTERNAL_JAR
+            : AssetSourceKind.EXTERNAL_ZIP;
         String sourceName = archivePath.getFileName() + "!/" + entry.getName();
         try (InputStream input = zipFile.getInputStream(entry)) {
             T asset = parser.parse(input, sourceName, kind);
-            sink.add(new Candidate<>(
+            sink.add(
+                new Candidate<>(
                     asset,
                     new AssetSource(kind, sourceName),
                     fingerprintForZipEntry(archivePath.toAbsolutePath().normalize().toString(), entry),
                     200,
-                    options.allowExternalOverrides()));
+                    options.allowExternalOverrides()
+                )
+            );
         } catch (Exception e) {
             throw new RuntimeException("Failed to load asset pack entry " + sourceName, e);
         }
@@ -365,7 +393,8 @@ public final class AssetLoader<T> {
     private String fingerprintForFile(Path path, String relative) throws IOException {
         FileTime modifiedTime = Files.getLastModifiedTime(path);
         long size = Files.size(path);
-        return "file:" + path.toAbsolutePath().normalize() + "|rel:" + relative + "|mtime:" + modifiedTime.toMillis() + "|size:" + size;
+        return "file:" + path.toAbsolutePath().normalize() + "|rel:" + relative + "|mtime:" + modifiedTime.toMillis()
+            + "|size:" + size;
     }
 
     /**
@@ -377,17 +406,17 @@ public final class AssetLoader<T> {
      */
     private String fingerprintForZipEntry(String archiveName, ZipEntry entry) {
         return "archive:" + archiveName
-                + "|entry:" + entry.getName()
-                + "|size:" + entry.getSize()
-                + "|crc:" + entry.getCrc()
-                + "|time:" + entry.getTime();
+            + "|entry:" + entry.getName()
+            + "|size:" + entry.getSize()
+            + "|crc:" + entry.getCrc()
+            + "|time:" + entry.getTime();
     }
 
     private record Candidate<T>(
-            T asset,
-            AssetSource source,
-            String fingerprint,
-            int priority,
-            boolean overrideEligible) {
-    }
+        T asset,
+        AssetSource source,
+        String fingerprint,
+        int priority,
+        boolean overrideEligible
+    ) {}
 }

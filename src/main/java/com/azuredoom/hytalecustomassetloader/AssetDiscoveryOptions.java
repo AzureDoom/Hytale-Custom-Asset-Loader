@@ -10,27 +10,30 @@ import java.util.Objects;
  * These options control where assets are searched for, which files qualify as asset definitions, and how duplicate or
  * missing resources are handled during loading.
  *
- * @param resourceFolder               the root classpath folder to scan, such as {@code "tags"} or {@code "classes"}
- * @param fileExtension                the required file extension for matching asset files, such as {@code ".json"}
- * @param externalPackDirectory        the directory containing external ZIP or JAR asset packs
- * @param allowExternalOverrides       whether assets loaded from external packs may replace previously loaded assets
- *                                     with the same ID
- * @param failIfClasspathFolderMissing whether loading should fail when the classpath resource folder is missing
- * @param enableLiveReload              whether live reloading is enabled
- * @param watchExternalPacks            whether the external pack directory should be watched for changes
+ * @param resourceFolder                    the root classpath folder to scan, such as {@code "tags"} or
+ *                                          {@code "classes"}
+ * @param fileExtension                     the required file extension for matching asset files, such as
+ *                                          {@code ".json"}
+ * @param externalPackDirectory             the directory containing external ZIP or JAR asset packs
+ * @param allowExternalOverrides            whether assets loaded from external packs may replace previously loaded
+ *                                          assets with the same ID
+ * @param failIfClasspathFolderMissing      whether loading should fail when the classpath resource folder is missing
+ * @param enableLiveReload                  whether live reloading is enabled
+ * @param watchExternalPacks                whether the external pack directory should be watched for changes
  * @param watchExplodedClasspathDirectories whether exploded classpath directories should be watched for changes
- * @param reloadDebounce                the debounce delay applied before reloading after filesystem events
+ * @param reloadDebounce                    the debounce delay applied before reloading after filesystem events
  */
 public record AssetDiscoveryOptions(
-        String resourceFolder,
-        String fileExtension,
-        Path externalPackDirectory,
-        boolean allowExternalOverrides,
-        boolean failIfClasspathFolderMissing,
-        boolean enableLiveReload,
-        boolean watchExternalPacks,
-        boolean watchExplodedClasspathDirectories,
-        Duration reloadDebounce) {
+    String resourceFolder,
+    String fileExtension,
+    Path externalPackDirectory,
+    boolean allowExternalOverrides,
+    boolean failIfClasspathFolderMissing,
+    boolean enableLiveReload,
+    boolean watchExternalPacks,
+    boolean watchExplodedClasspathDirectories,
+    Duration reloadDebounce
+) {
 
     /**
      * Creates a new asset discovery configuration.
@@ -45,21 +48,23 @@ public record AssetDiscoveryOptions(
      *                              is {@code null}
      */
     public AssetDiscoveryOptions(
-            String resourceFolder,
-            String fileExtension,
-            Path externalPackDirectory,
-            boolean allowExternalOverrides,
-            boolean failIfClasspathFolderMissing) {
+        String resourceFolder,
+        String fileExtension,
+        Path externalPackDirectory,
+        boolean allowExternalOverrides,
+        boolean failIfClasspathFolderMissing
+    ) {
         this(
-                resourceFolder,
-                fileExtension,
-                externalPackDirectory,
-                allowExternalOverrides,
-                failIfClasspathFolderMissing,
-                false,
-                false,
-                false,
-                Duration.ofMillis(250));
+            resourceFolder,
+            fileExtension,
+            externalPackDirectory,
+            allowExternalOverrides,
+            failIfClasspathFolderMissing,
+            false,
+            false,
+            false,
+            Duration.ofMillis(250)
+        );
     }
 
     /**
@@ -72,14 +77,15 @@ public record AssetDiscoveryOptions(
      * @param externalPackDirectory             the directory containing external ZIP or JAR asset packs
      * @param allowExternalOverrides            whether assets loaded from external packs may replace previously loaded
      *                                          assets with the same ID
-     * @param failIfClasspathFolderMissing      whether loading should fail when the classpath resource folder is missing
+     * @param failIfClasspathFolderMissing      whether loading should fail when the classpath resource folder is
+     *                                          missing
      * @param enableLiveReload                  whether live reloading is enabled
      * @param watchExternalPacks                whether the external pack directory should be watched for changes
      * @param watchExplodedClasspathDirectories whether exploded classpath directories should be watched for changes
      * @param reloadDebounce                    the debounce delay applied before reloading after filesystem events
-     * @throws NullPointerException if any required reference parameter is {@code null}
-     * @throws IllegalArgumentException if {@code resourceFolder} or {@code fileExtension} is blank,
-     *                                  or if {@code reloadDebounce} is not positive
+     * @throws NullPointerException     if any required reference parameter is {@code null}
+     * @throws IllegalArgumentException if {@code resourceFolder} or {@code fileExtension} is blank, or if
+     *                                  {@code reloadDebounce} is not positive
      */
     public AssetDiscoveryOptions {
         resourceFolder = Objects.requireNonNull(resourceFolder, "resourceFolder");

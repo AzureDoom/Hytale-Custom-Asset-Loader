@@ -9,18 +9,20 @@ import java.util.Set;
 
 /**
  * Represents the incremental difference between two asset snapshots.
- *
- * <p>The diff categorizes changes into:</p>
+ * <p>
+ * The diff categorizes changes into:
+ * </p>
  * <ul>
- *     <li>{@code added}   – assets present only in the current snapshot</li>
- *     <li>{@code updated} – assets present in both snapshots but with changes</li>
- *     <li>{@code removed} – assets present only in the previous snapshot</li>
+ * <li>{@code added} – assets present only in the current snapshot</li>
+ * <li>{@code updated} – assets present in both snapshots but with changes</li>
+ * <li>{@code removed} – assets present only in the previous snapshot</li>
  * </ul>
  */
 public record AssetDiff<T>(
-        Map<String, AssetRecord<T>> added,
-        Map<String, AssetChange<T>> updated,
-        Map<String, AssetRecord<T>> removed) {
+    Map<String, AssetRecord<T>> added,
+    Map<String, AssetChange<T>> updated,
+    Map<String, AssetRecord<T>> removed
+) {
 
     public AssetDiff {
         Objects.requireNonNull(added, "added");
@@ -70,7 +72,7 @@ public record AssetDiff<T>(
                 removed.put(id, before);
             } else if (before != null) {
                 boolean changed = !Objects.equals(before.fingerprint(), after.fingerprint())
-                        || !Objects.equals(before.source(), after.source());
+                    || !Objects.equals(before.source(), after.source());
                 if (changed) {
                     updated.put(id, new AssetChange<>(before, after));
                 }

@@ -11,7 +11,10 @@ import java.util.Objects;
  * @param mergedAssets the final resolved assets keyed by ID
  * @param recordsById  the underlying asset records keyed by ID
  */
-public record AssetSnapshot<T>(Map<String, T> mergedAssets, Map<String, AssetRecord<T>> recordsById) {
+public record AssetSnapshot<T>(
+    Map<String, T> mergedAssets,
+    Map<String, AssetRecord<T>> recordsById
+) {
 
     public AssetSnapshot {
         Objects.requireNonNull(mergedAssets, "mergedAssets");

@@ -8,7 +8,10 @@ import java.util.Objects;
  * @param previous the previous asset record
  * @param current  the current asset record
  */
-public record AssetChange<T>(AssetRecord<T> previous, AssetRecord<T> current) {
+public record AssetChange<T>(
+    AssetRecord<T> previous,
+    AssetRecord<T> current
+) {
 
     public AssetChange {
         Objects.requireNonNull(previous, "previous");
