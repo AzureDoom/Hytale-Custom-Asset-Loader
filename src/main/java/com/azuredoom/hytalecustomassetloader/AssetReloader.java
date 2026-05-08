@@ -26,6 +26,7 @@ import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
  * manual reload, but they are not watchable without swapping classloaders.
  * </p>
  */
+@SuppressWarnings("unused")
 public final class AssetReloader<T> implements Closeable {
 
     private final AssetLoader<T> loader;

@@ -16,6 +16,7 @@ import com.azuredoom.hytalecustomassetloader.spi.ReloadableAssetRegistrar;
  *
  * @param <T> the asset definition type being loaded and registered
  */
+@SuppressWarnings("unused")
 public final class AssetBootstrapper<T> {
 
     private final AssetLoader<T> loader;

@@ -23,6 +23,7 @@ import java.util.Objects;
  * @param watchExplodedClasspathDirectories whether exploded classpath directories should be watched for changes
  * @param reloadDebounce                    the debounce delay applied before reloading after filesystem events
  */
+@SuppressWarnings("unused")
 public record AssetDiscoveryOptions(
     String resourceFolder,
     String fileExtension,
