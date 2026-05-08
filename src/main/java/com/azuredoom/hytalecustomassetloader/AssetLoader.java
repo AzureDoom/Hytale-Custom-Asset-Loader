@@ -226,6 +226,16 @@ public final class AssetLoader<T> {
         return new AssetSnapshot<>(mergedAssets, recordsById);
     }
 
+    /**
+     * Discovers and loads all asset files found under {@link AssetDiscoveryOptions#resourceFolder()} on the classpath.
+     * <p>
+     * Both exploded directory entries and JAR entries are supported. If no matching resource folder is found and
+     * {@link AssetDiscoveryOptions#failIfClasspathFolderMissing()} is {@code true}, an exception is thrown.
+     * </p>
+     *
+     * @param sink the candidate list to populate
+     * @throws Exception if classpath enumeration or asset parsing fails
+     */
     private void loadClasspathResources(List<Candidate<T>> sink) throws Exception {
         Enumeration<URL> resources = classLoader.getResources(options.resourceFolder());
         if (!resources.hasMoreElements()) {
@@ -249,6 +259,13 @@ public final class AssetLoader<T> {
         }
     }
 
+    /**
+     * Loads assets from an exploded classpath directory identified by a {@code file://} URL.
+     *
+     * @param sink        the candidate list to populate
+     * @param resourceUrl the {@code file://} URL pointing to the resource folder root
+     * @throws Exception if the directory cannot be walked or an asset cannot be parsed
+     */
     private void loadFromDirectory(List<Candidate<T>> sink, URL resourceUrl) throws Exception {
         Path root = Paths.get(resourceUrl.toURI());
         try (var stream = Files.walk(root)) {
@@ -259,6 +276,13 @@ public final class AssetLoader<T> {
         }
     }
 
+    /**
+     * Parses and registers a single asset file found inside an exploded classpath directory.
+     *
+     * @param sink the candidate list to populate
+     * @param root the resource folder root used to compute the relative path
+     * @param path the absolute path to the asset file
+     */
     private void loadDirectoryAsset(List<Candidate<T>> sink, Path root, Path path) {
         String relative = root.relativize(path).toString().replace('\\', '/');
         String sourceName = options.resourceFolder() + "/" + relative;
@@ -278,6 +302,13 @@ public final class AssetLoader<T> {
         }
     }
 
+    /**
+     * Loads assets from a JAR on the classpath identified by a {@code jar://} URL.
+     *
+     * @param sink        the candidate list to populate
+     * @param resourceUrl the {@code jar://} URL pointing to the resource folder inside the JAR
+     * @throws Exception if the JAR cannot be opened or an asset cannot be parsed
+     */
     private void loadFromClasspathJar(List<Candidate<T>> sink, URL resourceUrl) throws Exception {
         JarURLConnection connection = (JarURLConnection) resourceUrl.openConnection();
         try (var jarFile = connection.getJarFile()) {
@@ -291,6 +322,13 @@ public final class AssetLoader<T> {
         }
     }
 
+    /**
+     * Parses and registers a single asset entry found inside a classpath JAR.
+     *
+     * @param sink    the candidate list to populate
+     * @param jarFile the open JAR file containing the entry
+     * @param entry   the ZIP entry representing the asset file
+     */
     private void loadClasspathJarAsset(List<Candidate<T>> sink, java.util.jar.JarFile jarFile, ZipEntry entry) {
         String name = entry.getName();
         try (InputStream input = jarFile.getInputStream(entry)) {
@@ -309,6 +347,16 @@ public final class AssetLoader<T> {
         }
     }
 
+    /**
+     * Scans the external asset pack directory and loads assets from any contained pack directories, ZIP files, or JARs.
+     * <p>
+     * If the configured external pack directory does not exist or is not a directory, this method returns without
+     * loading anything.
+     * </p>
+     *
+     * @param sink the candidate list to populate
+     * @throws Exception if the directory cannot be listed or an asset pack cannot be loaded
+     */
     private void loadExternalAssetPacks(List<Candidate<T>> sink) throws Exception {
         Path assetPackDir = options.externalPackDirectory();
         if (!Files.exists(assetPackDir) || !Files.isDirectory(assetPackDir)) {
@@ -337,6 +385,17 @@ public final class AssetLoader<T> {
         }
     }
 
+    /**
+     * Loads assets from an exploded (directory-based) external asset pack.
+     * <p>
+     * The pack is expected to contain a subdirectory matching {@link AssetDiscoveryOptions#resourceFolder()}. If that
+     * subdirectory does not exist the pack is silently skipped.
+     * </p>
+     *
+     * @param sink     the candidate list to populate
+     * @param packRoot the root directory of the external asset pack
+     * @throws Exception if the directory cannot be walked or an asset cannot be parsed
+     */
     private void loadFromExternalDirectory(List<Candidate<T>> sink, Path packRoot) throws Exception {
         Path assetRoot = packRoot.resolve(options.resourceFolder());
         if (!Files.exists(assetRoot) || !Files.isDirectory(assetRoot)) {
@@ -369,6 +428,13 @@ public final class AssetLoader<T> {
         }
     }
 
+    /**
+     * Loads assets from an external ZIP or JAR archive asset pack.
+     *
+     * @param sink        the candidate list to populate
+     * @param archivePath the path to the ZIP or JAR file
+     * @throws Exception if the archive cannot be opened or an asset cannot be parsed
+     */
     private void loadFromExternalArchive(List<Candidate<T>> sink, Path archivePath) throws Exception {
         try (ZipFile zipFile = new ZipFile(archivePath.toFile())) {
             List<? extends ZipEntry> entries = Collections.list(zipFile.entries());
@@ -381,6 +447,14 @@ public final class AssetLoader<T> {
         }
     }
 
+    /**
+     * Parses and registers a single asset entry found inside an external ZIP or JAR archive.
+     *
+     * @param sink        the candidate list to populate
+     * @param archivePath the path to the archive, used to determine the source kind and fingerprint
+     * @param zipFile     the open archive file containing the entry
+     * @param entry       the ZIP entry representing the asset file
+     */
     private void loadExternalArchiveAsset(List<Candidate<T>> sink, Path archivePath, ZipFile zipFile, ZipEntry entry) {
         AssetSourceKind kind = archivePath.toString().toLowerCase().endsWith(".jar")
             ? AssetSourceKind.EXTERNAL_JAR
@@ -487,6 +561,15 @@ public final class AssetLoader<T> {
         );
     }
 
+    /**
+     * Internal holder for a parsed asset and the metadata needed to merge and fingerprint it.
+     *
+     * @param asset            the parsed asset instance
+     * @param source           the source the asset was loaded from
+     * @param fingerprint      the fingerprint used for change detection
+     * @param priority         the load priority used when ordering candidates before merging
+     * @param overrideEligible whether this candidate may replace an existing asset with the same ID
+     */
     private record Candidate<T>(
         T asset,
         AssetSource source,
