@@ -22,7 +22,7 @@ public interface AssetParser<T> {
      * @param sourceName a human-readable source name such as {@code tags/example.json} or
      *                   {@code mypack.zip!/tags/example.json}
      * @param sourceKind the origin kind describing where the asset was loaded from
-     * @return the parsed asset definition
+     * @return the parsed asset definition, or {@code null} to indicate that this file should be ignored by this parser
      * @throws Exception if the asset cannot be read, validated, or parsed
      */
     T parse(InputStream stream, String sourceName, AssetSourceKind sourceKind) throws Exception;

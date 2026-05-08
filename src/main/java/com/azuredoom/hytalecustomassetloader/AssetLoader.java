@@ -264,14 +264,14 @@ public final class AssetLoader<T> {
         String sourceName = options.resourceFolder() + "/" + relative;
         try (InputStream input = Files.newInputStream(path)) {
             T asset = parser.parse(input, sourceName, AssetSourceKind.CLASSPATH_DIRECTORY);
-            sink.add(
-                new Candidate<>(
-                    asset,
-                    new AssetSource(AssetSourceKind.CLASSPATH_DIRECTORY, sourceName),
-                    fingerprintForFile(path, relative),
-                    100,
-                    false
-                )
+
+            addCandidateIfParsed(
+                sink,
+                asset,
+                new AssetSource(AssetSourceKind.CLASSPATH_DIRECTORY, sourceName),
+                fingerprintForFile(path, relative),
+                100,
+                false
             );
         } catch (Exception e) {
             throw new RuntimeException("Failed to load resource " + sourceName, e);
@@ -295,14 +295,14 @@ public final class AssetLoader<T> {
         String name = entry.getName();
         try (InputStream input = jarFile.getInputStream(entry)) {
             T asset = parser.parse(input, name, AssetSourceKind.CLASSPATH_JAR);
-            sink.add(
-                new Candidate<>(
-                    asset,
-                    new AssetSource(AssetSourceKind.CLASSPATH_JAR, name),
-                    fingerprintForZipEntry(jarFile.getName(), entry),
-                    100,
-                    false
-                )
+
+            addCandidateIfParsed(
+                sink,
+                asset,
+                new AssetSource(AssetSourceKind.CLASSPATH_JAR, name),
+                fingerprintForZipEntry(jarFile.getName(), entry),
+                100,
+                false
             );
         } catch (Exception e) {
             throw new RuntimeException("Failed to load classpath jar resource " + name, e);
@@ -354,14 +354,13 @@ public final class AssetLoader<T> {
                     try (InputStream input = Files.newInputStream(path)) {
                         T asset = parser.parse(input, sourceName, AssetSourceKind.EXTERNAL_DIRECTORY);
 
-                        sink.add(
-                            new Candidate<>(
-                                asset,
-                                new AssetSource(AssetSourceKind.EXTERNAL_DIRECTORY, sourceName),
-                                fingerprintForFile(path, relative),
-                                200,
-                                options.allowExternalOverrides()
-                            )
+                        addCandidateIfParsed(
+                            sink,
+                            asset,
+                            new AssetSource(AssetSourceKind.EXTERNAL_DIRECTORY, sourceName),
+                            fingerprintForFile(path, relative),
+                            200,
+                            options.allowExternalOverrides()
                         );
                     } catch (Exception e) {
                         throw new RuntimeException("Failed to load external directory resource " + sourceName, e);
@@ -389,14 +388,14 @@ public final class AssetLoader<T> {
         String sourceName = archivePath.getFileName() + "!/" + entry.getName();
         try (InputStream input = zipFile.getInputStream(entry)) {
             T asset = parser.parse(input, sourceName, kind);
-            sink.add(
-                new Candidate<>(
-                    asset,
-                    new AssetSource(kind, sourceName),
-                    fingerprintForZipEntry(archivePath.toAbsolutePath().normalize().toString(), entry),
-                    200,
-                    options.allowExternalOverrides()
-                )
+
+            addCandidateIfParsed(
+                sink,
+                asset,
+                new AssetSource(kind, sourceName),
+                fingerprintForZipEntry(archivePath.toAbsolutePath().normalize().toString(), entry),
+                200,
+                options.allowExternalOverrides()
             );
         } catch (Exception e) {
             throw new RuntimeException("Failed to load asset pack entry " + sourceName, e);
@@ -448,6 +447,44 @@ public final class AssetLoader<T> {
             + "|size:" + entry.getSize()
             + "|crc:" + entry.getCrc()
             + "|time:" + entry.getTime();
+    }
+
+    /**
+     * Adds a parsed asset candidate to the provided sink.
+     * <p>
+     * If the parser returned {@code null}, the asset is ignored. This allows parsers to skip files that are present in
+     * the same asset folder but belong to a different asset type.
+     * </p>
+     *
+     * @param sink             the candidate list to add to
+     * @param asset            the parsed asset instance, or {@code null} if the parser chose to ignore it
+     * @param source           the source the asset was loaded from
+     * @param fingerprint      the fingerprint used for change detection
+     * @param priority         the load priority used when merging assets
+     * @param overrideEligible whether this candidate may override an existing asset with the same ID
+     */
+    private void addCandidateIfParsed(
+        List<Candidate<T>> sink,
+        T asset,
+        AssetSource source,
+        String fingerprint,
+        int priority,
+        boolean overrideEligible
+    ) {
+        if (asset == null) {
+            logger.info("Skipping asset from " + source.name() + " because parser returned null");
+            return;
+        }
+
+        sink.add(
+            new Candidate<>(
+                asset,
+                source,
+                fingerprint,
+                priority,
+                overrideEligible
+            )
+        );
     }
 
     private record Candidate<T>(
