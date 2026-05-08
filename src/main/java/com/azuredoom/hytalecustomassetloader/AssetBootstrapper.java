@@ -63,8 +63,9 @@ public final class AssetBootstrapper<T> {
         if (reloadableRegistrar != null) {
             reloadableRegistrar.applyInitial(result.snapshot());
         } else {
+            Consumer<T> oneTimeRegistrar = Objects.requireNonNull(registrar, "registrar");
             for (var asset : result.mergedAssets().values()) {
-                registrar.accept(asset);
+                oneTimeRegistrar.accept(asset);
             }
         }
         return result.mergedAssets();

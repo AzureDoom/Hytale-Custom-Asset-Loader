@@ -89,10 +89,10 @@ public record AssetDiscoveryOptions(
      *                                  {@code reloadDebounce} is not positive
      */
     public AssetDiscoveryOptions {
-        resourceFolder = Objects.requireNonNull(resourceFolder, "resourceFolder");
-        fileExtension = Objects.requireNonNull(fileExtension, "fileExtension");
-        externalPackDirectory = Objects.requireNonNull(externalPackDirectory, "externalPackDirectory");
-        reloadDebounce = Objects.requireNonNull(reloadDebounce, "reloadDebounce");
+        Objects.requireNonNull(resourceFolder, "resourceFolder");
+        Objects.requireNonNull(fileExtension, "fileExtension");
+        Objects.requireNonNull(externalPackDirectory, "externalPackDirectory");
+        Objects.requireNonNull(reloadDebounce, "reloadDebounce");
 
         if (resourceFolder.isBlank()) {
             throw new IllegalArgumentException("resourceFolder must not be blank");

@@ -2,11 +2,7 @@ package com.azuredoom.hytalecustomassetloader;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.WatchKey;
-import java.nio.file.WatchService;
+import java.nio.file.*;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -14,10 +10,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import com.azuredoom.hytalecustomassetloader.model.AssetReloadResult;
 import com.azuredoom.hytalecustomassetloader.spi.AssetLogger;
 import com.azuredoom.hytalecustomassetloader.spi.ReloadableAssetRegistrar;
-
-import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
-import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
-import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 
 /**
  * Watches file-backed asset roots and re-applies diffs when assets change.
@@ -85,7 +77,7 @@ public final class AssetReloader<T> implements Closeable {
             if (!Files.exists(root)) {
                 continue;
             }
-            root.register(watchService, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY);
+            root.register(watchService, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_DELETE, StandardWatchEventKinds.ENTRY_MODIFY);
             logger.info("Watching asset root " + root);
         }
 
@@ -99,16 +91,20 @@ public final class AssetReloader<T> implements Closeable {
      * Applies a debounce delay before reloading to avoid excessive reloads.
      * </p>
      */
+    @SuppressWarnings("BusyWait")
     private void runWatcherLoop() {
         long debounceMillis = loader.options().reloadDebounce().toMillis();
         while (running.get()) {
             try {
                 WatchKey key = watchService.take();
-                if (key == null) {
-                    continue;
-                }
+
                 key.pollEvents();
-                key.reset();
+                boolean valid = key.reset();
+                if (!valid) {
+                    logger.warn("Watch key is no longer valid; stopping live reload watcher.");
+                    return;
+                }
+
                 Thread.sleep(debounceMillis);
 
                 AssetReloadResult<T> result = loader.reload();
@@ -117,6 +113,8 @@ public final class AssetReloader<T> implements Closeable {
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
+                return;
+            } catch (ClosedWatchServiceException e) {
                 return;
             } catch (Exception e) {
                 logger.warn("Live reload failed: " + e.getMessage());
